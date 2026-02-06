@@ -1,5 +1,7 @@
 # CHAOS Memory - ClawdHub Skill
 
+**C**ontext-aware **H**ierarchical **A**utonomous **O**bservation **S**ystem
+
 **Hybrid search for team memories with auto-capture.**
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://clawdhub.com/skills/chaos-memory)
