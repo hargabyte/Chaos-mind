@@ -128,8 +128,8 @@ DB_PATH="$CHAOS_HOME/db"
 cd "$DB_PATH" 2>/dev/null || { echo "Database not found at $DB_PATH"; exit 1; }
 
 case "$1" in
-    search) shift; dolt sql -q "SELECT id, SUBSTRING(content,1,100) as preview, category, priority FROM memories WHERE content LIKE '%$1%' LIMIT ${2:-10};" ;;
-    list) dolt sql -q "SELECT id, SUBSTRING(content,1,80), category, priority FROM memories ORDER BY created_at DESC LIMIT ${2:-10};" ;;
+    search) shift; dolt sql -q "USE chaos_local; SELECT id, SUBSTRING(content,1,100) as preview, category, priority FROM memories WHERE content LIKE '%$1%' LIMIT ${2:-10};" ;;
+    list) dolt sql -q "USE chaos_local; SELECT id, SUBSTRING(content,1,80), category, priority FROM memories ORDER BY created_at DESC LIMIT ${2:-10};" ;;
     *) echo "Usage: chaos-cli search \"query\" | list [N]" ;;
 esac
 EOFCLI
@@ -143,31 +143,21 @@ if [ ! -d "$CHAOS_HOME/db/.dolt" ]; then
     echo "Initializing database..."
     cd "$CHAOS_HOME/db"
     dolt init --name "chaos" --email "chaos@local"
-    dolt sql -q "CREATE TABLE IF NOT EXISTS memories (
-        id VARCHAR(36) PRIMARY KEY,
+    # Create chaos_local database (required by v1.0.0 binaries)
+    dolt sql -q "CREATE DATABASE IF NOT EXISTS chaos_local;"
+    dolt sql -q "USE chaos_local; CREATE TABLE IF NOT EXISTS memories (
+        id VARCHAR(64) PRIMARY KEY,
         content TEXT NOT NULL,
-        owner_id VARCHAR(64) NOT NULL DEFAULT 'system',
-        category VARCHAR(50) DEFAULT 'semantic',  -- Flexible categories (NOT enum)
-        priority FLOAT DEFAULT 0.5,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        access_count INT DEFAULT 0,
-        source VARCHAR(255) DEFAULT '',
-        tags JSON,
-        embedding BLOB,
-        team_id VARCHAR(64) DEFAULT 'system'
-    ) COMMENT='Local development database with flexible categories';"
-    dolt sql -q "CREATE TABLE IF NOT EXISTS edges (
-        id VARCHAR(36) PRIMARY KEY,
-        source_id VARCHAR(36),
-        target_id VARCHAR(36),
-        relation VARCHAR(50),
-        weight FLOAT DEFAULT 1.0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        category VARCHAR(50) NOT NULL,
+        priority FLOAT NOT NULL DEFAULT 1.0,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_category (category),
+        INDEX idx_created_at (created_at DESC),
+        INDEX idx_priority (priority DESC)
     );"
     dolt add .
-    dolt commit -m "Initialize CHAOS database"
-    success "Database initialized"
+    dolt commit -m "Initialize CHAOS database with chaos_local"
+    success "Database initialized (chaos_local)"
 else
     success "Database exists"
 fi
@@ -176,16 +166,22 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/config/consolidator.template.yaml" ]; then
     cp "$SCRIPT_DIR/config/consolidator.template.yaml" "$CHAOS_HOME/config/"
-    # Create active config from template
-    sed "s|~/.chaos|$CHAOS_HOME|g" "$SCRIPT_DIR/config/consolidator.template.yaml" > "$CHAOS_HOME/config/consolidator.yaml"
-    success "Config templates copied"
+    # Create active config from template (expand tilde paths to absolute)
+    HOME_PATH="$(eval echo ~)"
+    sed -e "s|~/.chaos|$CHAOS_HOME|g" \
+        -e "s|~/.openclaw|$HOME_PATH/.openclaw|g" \
+        -e "s|~/.clawdbot|$HOME_PATH/.clawdbot|g" \
+        "$SCRIPT_DIR/config/consolidator.template.yaml" > "$CHAOS_HOME/config/consolidator.yaml"
+    success "Config templates copied (paths expanded)"
 else
     warn "Config templates not found, creating basic config"
-    cat > "$CHAOS_HOME/config/consolidator.yaml" << 'EOF'
+    # Expand HOME for absolute paths (systemd compatibility)
+    HOME_PATH="$(eval echo ~)"
+    cat > "$CHAOS_HOME/config/consolidator.yaml" << EOF
 polling:
   interval: 10m
   batch_size: 50
-  state_file: ~/.chaos/consolidator-state.json
+  state_file: $HOME_PATH/.chaos/consolidator-state.json
 
 qwen:
   provider: ollama
@@ -199,16 +195,17 @@ qwen:
 chaos:
   mode: mcp
   mcp:
-    command: chaos-mcp
+    command: $HOME_PATH/.chaos/bin/chaos-mcp
+    args: []
     env:
-      CHAOS_DB_PORT: "3307"
+      CHAOS_DB_PATH: "$HOME_PATH/.chaos/db"
 
 auto_capture:
   enabled: true
   mode: transcript
   sources:
-    - ~/.openclaw-*/agents/*/sessions/*.jsonl
-    - ~/.clawdbot-*/agents/*/sessions/*.jsonl
+    - $HOME_PATH/.openclaw-*/agents/*/sessions/*.jsonl
+    - $HOME_PATH/.clawdbot-*/agents/*/sessions/*.jsonl
 
 extraction:
   min_confidence: 0.7
@@ -220,7 +217,7 @@ extraction:
 
 logging:
   level: info
-  file: ~/.chaos/consolidator.log
+  file: $HOME_PATH/.chaos/consolidator.log
 EOF
 fi
 
@@ -248,29 +245,30 @@ echo ""
 echo "  export CHAOS_HOME=\"$CHAOS_HOME\""
 echo "  export PATH=\"\$CHAOS_HOME/bin:\$PATH\""
 echo ""
-echo "Start the database:"
-echo "  cd $CHAOS_HOME/db && dolt sql-server --port 3307 &"
-echo ""
 echo "Test installation:"
 echo "  chaos-cli list"
 echo ""
 echo "Pull AI model (for auto-capture):"
 echo "  ollama pull qwen3:1.7b"
 echo ""
-echo "Start consolidator (daemon mode - continuous):"
-echo "  chaos-consolidator --config \$CHAOS_HOME/config/config.yaml &"
-echo ""
-echo "Start consolidator (one-shot - process once):"
+echo "Test auto-capture (one-shot - process transcripts once):"
 echo "  chaos-consolidator --auto-capture --config \$CHAOS_HOME/config/consolidator.yaml --once"
 echo ""
-echo "Set up systemd service (auto-restart):"
-echo "  \$CHAOS_HOME/bin/setup-service.sh"
-echo "  sudo systemctl start chaos-consolidator"
+echo "Run consolidator in background:"
+echo "  nohup chaos-consolidator --config \$CHAOS_HOME/config/consolidator.yaml > /tmp/consolidator.log 2>&1 &"
+echo ""
+echo "Or set up systemd service (recommended for production):"
+echo "  # Edit service file with your paths:"
+echo "  nano \$CHAOS_HOME/config/chaos-consolidator.service.template"
+echo "  sudo cp \$CHAOS_HOME/config/chaos-consolidator.service.template /etc/systemd/system/chaos-consolidator.service"
+echo "  sudo systemctl daemon-reload"
+echo "  sudo systemctl enable --now chaos-consolidator"
 echo ""
 echo "Check logs:"
-echo "  tail -f ~/.chaos/consolidator.log"
+echo "  tail -f $CHAOS_HOME/consolidator.log"
+echo "  # Or if using systemd:"
 echo "  sudo journalctl -u chaos-consolidator -f"
 echo ""
-echo "Documentation:"
-echo "  cat \$CHAOS_HOME/skill/INSTALL_NOTES.md"
+echo "Note: v1.0.0 uses embedded Dolt (no SQL server needed)."
+echo "The chaos-mcp binary auto-creates the database on first run."
 echo ""

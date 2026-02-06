@@ -1,44 +1,69 @@
 #!/bin/bash
-# CHAOS - Install systemd service
-# Usage: ./setup-service.sh
+# CHAOS Memory - Systemd service setup script
 
 set -e
 
 CHAOS_HOME="${CHAOS_HOME:-$HOME/.chaos}"
-USER_NAME="$(whoami)"
+SERVICE_NAME="chaos-consolidator.service"
+SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME"
 
-echo "🔧 Setting up CHAOS consolidator service..."
+# Colors
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+echo "Setting up CHAOS Memory systemd service..."
+echo ""
 
 # Check if template exists
 if [ ! -f "$CHAOS_HOME/config/chaos-consolidator.service.template" ]; then
-    echo "❌ Service template not found at $CHAOS_HOME/config/chaos-consolidator.service.template"
+    echo -e "${RED}Error: Service template not found at $CHAOS_HOME/config/chaos-consolidator.service.template${NC}"
     exit 1
 fi
 
-# Create service file from template
-TEMP_SERVICE="/tmp/chaos-consolidator.service"
-cat "$CHAOS_HOME/config/chaos-consolidator.service.template" \
-    | sed "s|%USER%|$USER_NAME|g" \
-    | sed "s|%CHAOS_HOME%|$CHAOS_HOME|g" \
-    > "$TEMP_SERVICE"
+# Get user
+USER=$(whoami)
+HOME_PATH=$(eval echo ~)
 
-echo "📋 Service file created"
+# Create service file from template
+echo "Creating service file..."
+cat > "/tmp/$SERVICE_NAME" << EOF
+[Unit]
+Description=CHAOS Memory Auto-Capture Consolidator
+After=network.target
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=$HOME_PATH/.chaos
+ExecStart=$HOME_PATH/.chaos/bin/chaos-consolidator --config $HOME_PATH/.chaos/config/consolidator.yaml
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Environment
+Environment="HOME=$HOME_PATH"
+Environment="CHAOS_HOME=$HOME_PATH/.chaos"
+Environment="PATH=$HOME_PATH/.chaos/bin:/usr/local/bin:/usr/bin:/bin"
+
+[Install]
+WantedBy=multi-user.target
+EOF
 
 # Install service
-if command -v systemctl &> /dev/null; then
-    echo "Installing systemd service..."
-    sudo cp "$TEMP_SERVICE" /etc/systemd/system/chaos-consolidator.service
-    sudo systemctl daemon-reload
-    sudo systemctl enable chaos-consolidator.service
-    echo "✅ Service installed and enabled"
-    echo ""
-    echo "Start with: sudo systemctl start chaos-consolidator"
-    echo "Status: systemctl status chaos-consolidator"
-    echo "Logs: sudo journalctl -u chaos-consolidator -f"
-else
-    echo "⚠️  systemd not available. Service file saved to: $TEMP_SERVICE"
-    echo "You can run manually with:"
-    echo "  $CHAOS_HOME/bin/chaos-consolidator --config $CHAOS_HOME/config/consolidator.yaml --auto-capture &"
-fi
+echo "Installing service (requires sudo)..."
+sudo cp "/tmp/$SERVICE_NAME" "$SERVICE_FILE"
+sudo systemctl daemon-reload
 
-rm -f "$TEMP_SERVICE"
+echo ""
+echo -e "${GREEN}✓ Service installed${NC}"
+echo ""
+echo "Next steps:"
+echo "  1. Review the service file: sudo nano $SERVICE_FILE"
+echo "  2. Enable service: sudo systemctl enable $SERVICE_NAME"
+echo "  3. Start service: sudo systemctl start $SERVICE_NAME"
+echo "  4. Check status: sudo systemctl status $SERVICE_NAME"
+echo "  5. View logs: sudo journalctl -u $SERVICE_NAME -f"
+echo ""

@@ -5,7 +5,7 @@
 polling:
   interval: 10m
   batch_size: 50
-  state_file: ~/.chaos/consolidator-state.json
+  state_file: ~/.chaos/consolidator-state.json  # Will be expanded during install
 
 qwen:
   provider: ollama
@@ -23,7 +23,7 @@ chaos:
     command: ~/.chaos/bin/chaos-mcp  # Absolute path from install location
     args: []
     env:
-      CHAOS_DB_PORT: "3307"  # Local development database
+      CHAOS_DB_PATH: "~/.chaos/db"  # Embedded Dolt database (created by install.sh)
 
 auto_capture:
   enabled: true

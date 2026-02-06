@@ -6,13 +6,13 @@ Wants=ollama.service
 [Service]
 Type=simple
 User=%USER%
-WorkingDirectory=%CHAOS_HOME%/bin
+WorkingDirectory=%CHAOS_HOME%
+Environment="HOME=%HOME%"
+Environment="CHAOS_HOME=%CHAOS_HOME%"
 Environment="PATH=/usr/local/bin:/usr/bin:/bin:%CHAOS_HOME%/bin"
-Environment="CHAOS_DB_PORT=3307"
 
-# Pre-flight checks
+# Pre-flight checks (Ollama only - embedded Dolt auto-starts)
 ExecStartPre=/bin/bash -c 'timeout 5 curl -sf http://localhost:11434/api/tags >/dev/null || (echo "Ollama not ready" && exit 1)'
-ExecStartPre=/bin/bash -c 'timeout 5 mysql -h 127.0.0.1 -P 3307 -u root -e "SHOW DATABASES;" >/dev/null || (echo "Database not ready" && exit 1)'
 
 # Main process
 ExecStart=%CHAOS_HOME%/bin/chaos-consolidator --config %CHAOS_HOME%/config/consolidator.yaml --auto-capture
