@@ -1,0 +1,250 @@
+# CHAOS Memory - ClawdHub Skill
+
+**Hybrid search for team memories with auto-capture.**
+
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://clawdhub.com/skills/chaos-memory)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/hargabyte/chaos-memory/blob/main/LICENSE)
+
+---
+
+## Features
+
+🔍 **Hybrid Search** - Combines 4 signals for optimal relevance:
+- BM25 keyword matching (0.4 weight)
+- Vector semantic search (0.4 weight)
+- Graph relationships (0.1 weight)
+- Heat/access patterns (0.1 weight)
+
+🤖 **Auto-Capture** - Extracts memories from session transcripts automatically:
+- Decisions made
+- Important facts
+- Key insights
+- Technical details
+
+📊 **Progressive Disclosure** - Choose detail level:
+- Index mode: ~75 tokens/result (90% savings)
+- Summary mode: ~250 tokens/result (67% savings)
+- Full mode: ~750 tokens/result (complete context)
+
+⚡ **43x Faster** - Optimized extraction:
+- 2.6s per message
+- ~42s per 16-message session
+- Qwen3-1.7B with thinking disabled
+
+---
+
+## Installation
+
+### Via ClawdHub (Recommended)
+
+```bash
+clawdhub install chaos-memory
+```
+
+### Via Bot
+
+Send to your AI assistant:
+```
+Install the chaos-memory skill from ClawdHub
+```
+
+### Manual
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hargabyte/Chaos-mind/main/install.sh | bash
+```
+
+---
+
+## Quick Start
+
+**Search memories:**
+```bash
+chaos-cli search "pricing decisions" --mode summary --limit 5
+```
+
+**Store a memory:**
+```bash
+chaos-cli store "Important decision: ..." --category decision --priority 0.9
+```
+
+**List recent:**
+```bash
+chaos-cli list 10
+```
+
+---
+
+## Usage
+
+### Search
+
+```bash
+# Fast scan (index mode)
+chaos-cli search "architecture" --mode index --limit 10
+
+# Balanced (summary mode)
+chaos-cli search "pricing" --mode summary --limit 5
+
+# Deep dive (full mode)
+chaos-cli search "model selection" --mode full --limit 3
+
+# Enable hybrid search
+chaos-cli search "query" --hybrid
+```
+
+### Store
+
+```bash
+# Decision
+chaos-cli store "Enterprise tier at $99/mo" --category decision --priority 0.9
+
+# Core fact
+chaos-cli store "CHAOS uses port 3307" --category core --priority 0.7
+
+# Research finding
+chaos-cli store "43x performance improvement" --category research --priority 0.8
+```
+
+### Categories
+
+| Category | Use For |
+|----------|---------|
+| `decision` | Team decisions, commitments |
+| `core` | Fundamental facts, configurations |
+| `semantic` | Domain knowledge, concepts |
+| `research` | Findings, experiments |
+
+### Priority Levels
+
+| Level | Meaning |
+|-------|---------|
+| 0.9-1.0 | Critical (major decisions) |
+| 0.7-0.8 | High (important context) |
+| 0.5-0.6 | Medium (useful reference) |
+| 0.3-0.4 | Low (general notes) |
+
+---
+
+## Auto-Capture
+
+CHAOS automatically extracts memories from session transcripts in the background.
+
+**Start auto-capture:**
+```bash
+cd ~/.chaos/chaos-memory
+./deploy-hsa.sh
+```
+
+**Check status:**
+```bash
+ps aux | grep chaos-consolidator
+tail -f ~/.chaos/consolidator.log
+```
+
+**What it captures:**
+- ✅ Decisions made
+- ✅ Important facts
+- ✅ Key insights
+- ❌ Greetings, filler (skipped)
+
+---
+
+## Configuration
+
+**Location:** `~/.chaos/chaos.conf`
+
+```bash
+CHAOS_HOME=~/.chaos/chaos-memory
+CHAOS_DB_DIR=~/.chaos/data
+CHAOS_DB_PORT=3307
+CHAOS_MODEL=qwen3:1.7b
+```
+
+**Override:**
+```bash
+export CHAOS_DB_PORT=3308
+chaos-cli search "query"
+```
+
+---
+
+## Performance
+
+| Metric | Value |
+|--------|-------|
+| Extraction speed | 2.6s per message |
+| Session speed | ~42s for 16 messages |
+| Improvement | 43x faster |
+| Token savings (index) | 90% |
+| Token savings (summary) | 67% |
+
+---
+
+## Requirements
+
+- **RAM:** 16 GB minimum
+- **Disk:** 5 GB (for model + database)
+- **CPU:** 6+ cores recommended
+- **OS:** Linux, macOS, Windows (WSL)
+
+**Dependencies** (auto-installed):
+- Dolt 0.50.0+
+- Ollama 0.1.0+
+- Go 1.21+ (for building)
+
+---
+
+## Troubleshooting
+
+**Command not found:**
+```bash
+which chaos-cli
+# If not found: cd ~/.chaos/chaos-memory && ./install.sh
+```
+
+**No results:**
+```bash
+# Check database
+cd ~/.chaos/data && dolt sql -q "SELECT COUNT(*) FROM memories;"
+
+# Run extraction
+chaos-consolidator --auto-capture --once
+```
+
+**Database error:**
+```bash
+# Restart Dolt
+ps aux | grep dolt
+cd ~/.chaos/data && dolt sql-server &
+```
+
+---
+
+## Links
+
+- **GitHub:** https://github.com/hargabyte/Chaos-mind
+- **Documentation:** https://github.com/hargabyte/Chaos-mind#readme
+- **Issues:** https://github.com/hargabyte/Chaos-mind/issues
+- **ClawdHub:** https://clawdhub.com/skills/chaos-memory
+
+---
+
+## License
+
+MIT License - see [LICENSE](https://github.com/hargabyte/chaos-memory/blob/main/LICENSE)
+
+---
+
+## Support
+
+- **Issues:** https://github.com/hargabyte/chaos-memory/issues
+- **Discussions:** https://github.com/hargabyte/chaos-memory/discussions
+- **Email:** support@hargabyte.com
+
+---
+
+**Version:** 1.0.0  
+**Author:** Hargabyte Software  
+**Model:** Qwen3-1.7B (locked default)  
+**Performance:** 43x faster extraction

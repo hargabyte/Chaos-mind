@@ -1,0 +1,151 @@
+#!/bin/bash
+# CHAOS CLI - Portable wrapper
+# Searches and manages memories in CHAOS database
+
+set -e
+
+CHAOS_HOME="${CHAOS_HOME:-$HOME/.chaos}"
+CHAOS_DB_PORT="${CHAOS_DB_PORT:-3307}"
+DB_PATH="$CHAOS_HOME/db"
+
+# Commands
+CMD="${1:-help}"
+shift || true
+
+case "$CMD" in
+    search)
+        QUERY="$1"
+        MODE="summary"
+        LIMIT="5"
+        
+        # Parse args
+        shift || true
+        while [[ $# -gt 0 ]]; do
+            case $1 in
+                --mode) MODE="$2"; shift 2 ;;
+                --limit) LIMIT="$2"; shift 2 ;;
+                --hybrid) shift ;;  # Placeholder for future
+                *) shift ;;
+            esac
+        done
+        
+        if [[ -z "$QUERY" ]]; then
+            echo "Usage: chaos-cli search \"query\" [--mode index|summary|full] [--limit N]"
+            exit 1
+        fi
+        
+        ESCAPED=$(echo "$QUERY" | sed "s/'/''/g")
+        
+        echo "Searching CHAOS for: \"$QUERY\" (mode: $MODE, limit: $LIMIT)"
+        echo ""
+        
+        cd "$DB_PATH"
+        
+        if [[ "$MODE" == "index" ]]; then
+            dolt sql -q "SELECT id, SUBSTRING(content, 1, 80) as preview, category, priority FROM memories WHERE content LIKE '%${ESCAPED}%' ORDER BY priority DESC LIMIT $LIMIT;" 2>/dev/null || echo "Database not accessible"
+        elif [[ "$MODE" == "full" ]]; then
+            dolt sql -q "SELECT id, content, category, priority, tags, created_at FROM memories WHERE content LIKE '%${ESCAPED}%' ORDER BY priority DESC LIMIT $LIMIT;" 2>/dev/null || echo "Database not accessible"
+        else
+            # Summary mode (default)
+            RESULTS=$(dolt sql -q "SELECT id, content, category, priority, created_at FROM memories WHERE content LIKE '%${ESCAPED}%' ORDER BY priority DESC LIMIT $LIMIT;" -r csv 2>/dev/null | tail -n +2)
+            
+            if [[ -z "$RESULTS" ]]; then
+                echo "No results found."
+            else
+                N=1
+                echo "$RESULTS" | while IFS=',' read -r id content category priority created; do
+                    echo "$N. [$category] (priority: $priority)"
+                    echo "   ID: $id"
+                    echo "   ${content:0:200}..."
+                    echo "   Created: $created"
+                    echo ""
+                    N=$((N+1))
+                done
+            fi
+        fi
+        ;;
+        
+    store)
+        CONTENT="$1"
+        CATEGORY="semantic"
+        PRIORITY="0.5"
+        
+        shift || true
+        while [[ $# -gt 0 ]]; do
+            case $1 in
+                --category) CATEGORY="$2"; shift 2 ;;
+                --priority) PRIORITY="$2"; shift 2 ;;
+                *) shift ;;
+            esac
+        done
+        
+        if [[ -z "$CONTENT" ]]; then
+            echo "Usage: chaos-cli store \"content\" [--category decision|core|semantic|research] [--priority 0.0-1.0]"
+            exit 1
+        fi
+        
+        ID=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid 2>/dev/null || echo "mem-$(date +%s)")
+        ESCAPED=$(echo "$CONTENT" | sed "s/'/''/g")
+        
+        cd "$DB_PATH"
+        dolt sql -q "INSERT INTO memories (id, content, category, priority) VALUES ('$ID', '$ESCAPED', '$CATEGORY', $PRIORITY);" 2>/dev/null
+        
+        if [[ $? -eq 0 ]]; then
+            echo "✓ Stored memory: $ID"
+            echo "  Category: $CATEGORY"
+            echo "  Priority: $PRIORITY"
+        else
+            echo "✗ Failed to store memory"
+            exit 1
+        fi
+        ;;
+        
+    get)
+        ID="$1"
+        if [[ -z "$ID" ]]; then
+            echo "Usage: chaos-cli get <memory-id>"
+            exit 1
+        fi
+        
+        cd "$DB_PATH"
+        dolt sql -q "SELECT * FROM memories WHERE id = '$ID';" 2>/dev/null || echo "Memory not found"
+        ;;
+        
+    list)
+        LIMIT="${1:-10}"
+        
+        cd "$DB_PATH"
+        dolt sql -q "SELECT id, SUBSTRING(content, 1, 100) as preview, category, priority, created_at FROM memories ORDER BY created_at DESC LIMIT $LIMIT;" 2>/dev/null || echo "Database not accessible"
+        ;;
+        
+    help|--help|-h|"")
+        echo "CHAOS Memory CLI"
+        echo ""
+        echo "Usage: chaos-cli <command> [options]"
+        echo ""
+        echo "Commands:"
+        echo "  search \"query\"    Search memories"
+        echo "  store \"content\"   Store a new memory"
+        echo "  get <id>          Get memory by ID"
+        echo "  list [N]          List recent memories"
+        echo "  help              Show this help"
+        echo ""
+        echo "Search options:"
+        echo "  --mode index|summary|full   Detail level (default: summary)"
+        echo "  --limit N                   Max results (default: 5)"
+        echo ""
+        echo "Store options:"
+        echo "  --category decision|core|semantic|research"
+        echo "  --priority 0.0-1.0"
+        echo ""
+        echo "Environment:"
+        echo "  CHAOS_HOME      Installation dir (default: ~/.chaos)"
+        echo "  CHAOS_DB_PORT   Database port (default: 3307)"
+        ;;
+        
+    *)
+        echo "Unknown command: $CMD"
+        echo "Run 'chaos-cli help' for usage."
+        exit 1
+        ;;
+esac
