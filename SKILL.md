@@ -5,12 +5,10 @@ homepage: https://github.com/hargabyte/Chaos-mind
 metadata:
   clawdbot:
     emoji: 🧠
-    requires:
-      bins: ["chaos-cli"]
     install:
       - id: chaos-install
         kind: shell
-        command: "./install.sh"
+        command: "bash install.sh"
         label: "Install CHAOS Memory System"
 ---
 
