@@ -20,7 +20,7 @@ qwen:
 chaos:
   mode: mcp
   mcp:
-    command: chaos-mcp  # Will use PATH
+    command: ~/.chaos/bin/chaos-mcp  # Absolute path from install location
     args: []
     env:
       CHAOS_DB_PORT: "3307"  # Local development database
