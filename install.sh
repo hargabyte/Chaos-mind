@@ -225,11 +225,12 @@ chaos:
       CHAOS_DB_PATH: "$HOME_PATH/.chaos/db"
 
 auto_capture:
-  enabled: true
+  enabled: false  # DISABLED BY DEFAULT - User must explicitly enable
   mode: transcript
-  sources:
-    - $HOME_PATH/.openclaw-*/agents/*/sessions/*.jsonl
-    - $HOME_PATH/.clawdbot-*/agents/*/sessions/*.jsonl
+  sources: []  # Empty by default - User must configure paths
+  # Example paths (uncomment and customize to enable):
+  # - $HOME_PATH/.openclaw-*/agents/*/sessions/*.jsonl
+  # - $HOME_PATH/.clawdbot-*/agents/*/sessions/*.jsonl
 
 extraction:
   min_confidence: 0.7
@@ -272,26 +273,29 @@ echo ""
 echo "Test installation:"
 echo "  chaos-cli list"
 echo ""
-echo "Pull AI model (for auto-capture):"
-echo "  ollama pull qwen3:1.7b"
+echo "Store your first memory:"
+echo "  chaos-cli store \"Your important fact\" --category core --priority 0.8"
 echo ""
-echo "Test auto-capture (one-shot - process transcripts once):"
-echo "  chaos-consolidator --auto-capture --config \$CHAOS_HOME/config/consolidator.yaml --once"
+echo "Search memories:"
+echo "  chaos-cli search \"keyword\""
 echo ""
-echo "Run consolidator in background:"
-echo "  nohup chaos-consolidator --config \$CHAOS_HOME/config/consolidator.yaml > /tmp/consolidator.log 2>&1 &"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "📋 OPTIONAL: Enable Auto-Capture (Disabled by Default)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "Or set up systemd service (recommended for production):"
-echo "  # Edit service file with your paths:"
-echo "  nano \$CHAOS_HOME/config/chaos-consolidator.service.template"
-echo "  sudo cp \$CHAOS_HOME/config/chaos-consolidator.service.template /etc/systemd/system/chaos-consolidator.service"
-echo "  sudo systemctl daemon-reload"
-echo "  sudo systemctl enable --now chaos-consolidator"
+echo "Auto-capture is DISABLED by default for privacy."
 echo ""
-echo "Check logs:"
-echo "  tail -f $CHAOS_HOME/consolidator.log"
-echo "  # Or if using systemd:"
-echo "  sudo journalctl -u chaos-consolidator -f"
+echo "To enable (after reviewing privacy implications):"
+echo "  1. Edit config: nano \$CHAOS_HOME/config/consolidator.yaml"
+echo "  2. Set 'auto_capture.enabled: true'"
+echo "  3. Configure 'auto_capture.sources' with your session paths"
+echo "  4. Install Ollama: https://ollama.com"
+echo "  5. Pull model: ollama pull qwen3:1.7b"
+echo "  6. Test: chaos-consolidator --auto-capture --once"
+echo ""
+echo "Documentation:"
+echo "  Security: https://github.com/hargabyte/Chaos-mind/blob/main/SECURITY.md"
+echo "  Config: cat \$CHAOS_HOME/config/consolidator.yaml"
 echo ""
 echo "Note: v1.0.0 uses embedded Dolt (no SQL server needed)."
 echo "The chaos-mcp binary auto-creates the database on first run."

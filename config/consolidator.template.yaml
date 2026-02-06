@@ -26,14 +26,17 @@ chaos:
       CHAOS_DB_PATH: "~/.chaos/db"  # Embedded Dolt database (created by install.sh)
 
 auto_capture:
-  enabled: true
+  enabled: false  # DISABLED BY DEFAULT - You must explicitly enable after configuring paths
   mode: transcript
   
-  # Customize these paths for your OpenClaw/Clawdbot installation
-  sources:
-    - ~/.openclaw-*/agents/*/sessions/*.jsonl
-    - ~/.clawdbot-*/agents/*/sessions/*.jsonl
-    - ~/*/memory/*.md  # Workspace memory files
+  # IMPORTANT: Configure paths before enabling
+  # Empty by default to prevent unintended data access
+  sources: []
+  
+  # Example paths (uncomment and customize after reviewing):
+  # - ~/.openclaw-*/agents/*/sessions/*.jsonl
+  # - ~/.clawdbot-*/agents/*/sessions/*.jsonl
+  # - ~/your-project/memory/*.md
   
   triggers:
     min_messages: 10      # Skip short sessions

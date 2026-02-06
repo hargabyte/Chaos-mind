@@ -129,17 +129,26 @@ chaos-cli list 20     # Show 20
 
 ---
 
-## Auto-Capture (Optional)
+## Auto-Capture (Optional - Opt-In Only)
 
-Start the background daemon to auto-extract from sessions:
+**⚠️ DISABLED BY DEFAULT for privacy.**
 
-```bash
-chaos-consolidator --auto-capture --config ~/.chaos/config.yaml &
-```
+To enable auto-capture:
 
-**What it extracts:** Decisions, facts, insights
-**What it skips:** Greetings, filler, acknowledgments
+1. **Review privacy implications** - reads your session transcripts
+2. **Edit config:** `nano ~/.chaos/config/consolidator.yaml`
+3. **Set:** `auto_capture.enabled: true`
+4. **Configure paths:** Add your session directories to `auto_capture.sources`
+5. **Install Ollama:** https://ollama.com (if not already installed)
+6. **Pull model:** `ollama pull qwen3:1.7b`
+7. **Test:** `chaos-consolidator --auto-capture --once`
+
+**What it extracts:** Decisions, facts, insights  
+**What it skips:** Greetings, filler, acknowledgments  
+**Where it runs:** 100% local (your machine, no external APIs)  
 **Speed:** 2.6s per message (~42s per 16-message session)
+
+**Privacy:** Only processes files you explicitly configure. See SECURITY.md for details.
 
 ---
 
@@ -224,20 +233,26 @@ chaos-cli search "performance optimization"
 
 ## Configuration
 
-Default config location: `~/.chaos/config.yaml`
+Default config location: `~/.chaos/config/consolidator.yaml`
 
 ```yaml
-database:
-  host: 127.0.0.1
-  port: 3307
+# Auto-capture is DISABLED by default
+auto_capture:
+  enabled: false  # Change to true after configuring paths
+  sources: []     # Add your session paths here
+  
+# Example (uncomment after reviewing):
+# sources:
+#   - ~/.openclaw-*/agents/*/sessions/*.jsonl
 
 qwen:
-  model: qwen3:1.7b
-  think: false
+  model: qwen3:1.7b  # Locked default
 
-auto_capture:
-  enabled: true
-  interval: 15m
+chaos:
+  mode: mcp
+  mcp:
+    env:
+      CHAOS_DB_PATH: "~/.chaos/db"
 ```
 
 ---
