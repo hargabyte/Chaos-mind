@@ -1,6 +1,15 @@
 #!/bin/bash
 # CHAOS Memory - ClawdHub Install Script
 # Downloads pre-built binaries and sets up the system
+#
+# Security Model:
+# - Requires Dolt pre-installed (via package manager - no curl|bash)
+# - Downloads binaries from GitHub releases (signed, reproducible builds)
+# - All data stored locally (~/.chaos/db - no cloud sync)
+# - No external API calls or network access after installation
+# - Auto-capture is opt-in and requires manual configuration
+#
+# Source: https://github.com/hargabyte/Chaos-mind
 
 set -e
 
@@ -52,28 +61,27 @@ detect_platform() {
     echo "$PLATFORM"
 }
 
-# 1. Check/install Dolt
+# 1. Check Dolt (required)
 echo "Checking dependencies..."
 if command -v dolt &> /dev/null; then
     success "Dolt installed ($(dolt version 2>/dev/null | head -1 || echo 'unknown'))"
 else
-    warn "Dolt not found. Installing..."
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        brew install dolt 2>/dev/null || {
-            curl -L https://github.com/dolthub/dolt/releases/latest/download/install.sh | bash
-        }
-    else
-        curl -L https://github.com/dolthub/dolt/releases/latest/download/install.sh | bash
-    fi
-    success "Dolt installed"
+    error "Dolt not found. Please install Dolt first:"
+    echo ""
+    echo "  macOS:   brew install dolt"
+    echo "  Linux:   brew install dolt  # or see https://docs.dolthub.com/introduction/installation"
+    echo "  Windows: choco install dolt  # or see https://docs.dolthub.com/introduction/installation"
+    echo ""
+    echo "Official installation guide: https://docs.dolthub.com/introduction/installation"
+    exit 1
 fi
 
-# 2. Check/install Ollama (optional, for auto-capture)
+# 2. Check Ollama (optional, for auto-capture only)
 if command -v ollama &> /dev/null; then
-    success "Ollama installed"
+    success "Ollama installed (optional for auto-capture)"
 else
-    warn "Ollama not found. Auto-capture requires Ollama."
-    echo "  Install with: curl -fsSL https://ollama.com/install.sh | sh"
+    warn "Ollama not found (optional - only needed for auto-capture)"
+    echo "  To use auto-capture later, install Ollama from: https://ollama.com"
 fi
 
 # 3. Create directories
@@ -127,10 +135,26 @@ CHAOS_HOME="${CHAOS_HOME:-$HOME/.chaos}"
 DB_PATH="$CHAOS_HOME/db"
 cd "$DB_PATH" 2>/dev/null || { echo "Database not found at $DB_PATH"; exit 1; }
 
+# Sanitize input to prevent SQL injection
+sanitize_sql() {
+    # Escape single quotes for SQL
+    echo "$1" | sed "s/'/''/g"
+}
+
 case "$1" in
-    search) shift; dolt sql -q "USE chaos_local; SELECT id, SUBSTRING(content,1,100) as preview, category, priority FROM memories WHERE content LIKE '%$1%' LIMIT ${2:-10};" ;;
-    list) dolt sql -q "USE chaos_local; SELECT id, SUBSTRING(content,1,80), category, priority FROM memories ORDER BY created_at DESC LIMIT ${2:-10};" ;;
-    *) echo "Usage: chaos-cli search \"query\" | list [N]" ;;
+    search) 
+        shift
+        QUERY=$(sanitize_sql "$1")
+        LIMIT=${2:-10}
+        dolt sql -q "USE chaos_local; SELECT id, SUBSTRING(content,1,100) as preview, category, priority FROM memories WHERE content LIKE '%$QUERY%' LIMIT $LIMIT;"
+        ;;
+    list) 
+        LIMIT=${2:-10}
+        dolt sql -q "USE chaos_local; SELECT id, SUBSTRING(content,1,80), category, priority FROM memories ORDER BY created_at DESC LIMIT $LIMIT;"
+        ;;
+    *) 
+        echo "Usage: chaos-cli search \"query\" [limit] | list [limit]"
+        ;;
 esac
 EOFCLI
 fi

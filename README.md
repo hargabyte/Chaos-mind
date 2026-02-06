@@ -371,6 +371,7 @@ auto_capture:
 
 - **GitHub:** https://github.com/hargabyte/Chaos-mind
 - **Documentation:** https://github.com/hargabyte/Chaos-mind#readme
+- **Security Policy:** https://github.com/hargabyte/Chaos-mind/blob/main/SECURITY.md
 - **Issues:** https://github.com/hargabyte/Chaos-mind/issues
 - **ClawdHub:** https://clawdhub.com/skills/chaos-memory
 
