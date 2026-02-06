@@ -1,6 +1,6 @@
 ---
 name: chaos-memory
-description: Hybrid search memory system for AI agents. Search, store, and auto-capture team knowledge with BM25 + Vector + Graph + Heat signals.
+description: Hybrid search memory system for AI agents. Manual search and storage - auto-capture is opt-in only.
 homepage: https://github.com/hargabyte/Chaos-mind
 metadata:
   {
@@ -12,7 +12,7 @@ metadata:
             {
               "id": "chaos-install",
               "kind": "shell",
-              "command": "curl -fsSL https://raw.githubusercontent.com/hargabyte/Chaos-mind/main/install.sh | bash",
+              "command": "bash install.sh",
               "label": "Install CHAOS Memory",
             },
           ],
@@ -278,6 +278,44 @@ cd ~/.chaos/db && dolt sql-server --port 3307 &
 ```bash
 chaos-cli list  # Check if memories exist
 ```
+
+---
+
+## Security & Privacy
+
+**Data Storage:** All memories stored locally on your machine (`~/.chaos/db`)
+- No cloud sync or external transmission
+- Your data never leaves your computer
+- Database is version-controlled (Dolt) for auditability
+
+**Auto-Capture (Opt-In):**
+- **Disabled by default** - you must explicitly enable and configure
+- Requires manual configuration of session paths in `~/.chaos/config.yaml`
+- Only processes files you explicitly specify in `auto_capture.sources`
+- Runs locally using your own Ollama instance (no external API calls)
+
+**Permissions:**
+- Read: Session transcript files (only paths you configure)
+- Write: Local database (`~/.chaos/db`)
+- Network: None (all processing is local)
+
+**Control:**
+```bash
+# View what auto-capture will process (dry-run)
+chaos-consolidator --auto-capture --once --dry-run
+
+# Disable auto-capture
+# Edit ~/.chaos/config.yaml:
+# auto_capture:
+#   enabled: false
+
+# Or simply don't configure session paths
+```
+
+**Transparency:**
+- Install script source: Included in repo (`install.sh`)
+- All binaries built via GitHub Actions (reproducible)
+- Database is plain Dolt (inspect with `dolt sql`)
 
 ---
 

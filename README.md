@@ -15,11 +15,13 @@
 - Graph relationships (0.1 weight)
 - Heat/access patterns (0.1 weight)
 
-🤖 **Auto-Capture** - Extracts memories from session transcripts automatically:
+🤖 **Auto-Capture (Opt-In)** - Optionally extracts memories from your sessions:
+- Disabled by default - requires manual configuration
 - Decisions made
 - Important facts
 - Key insights
 - Technical details
+- 100% local processing (no cloud/external APIs)
 
 📊 **Progressive Disclosure** - Choose detail level:
 - Index mode: ~75 tokens/result (90% savings)
@@ -315,6 +317,53 @@ chaos-consolidator --auto-capture --once
 ps aux | grep dolt
 cd ~/.chaos/data && dolt sql-server &
 ```
+
+---
+
+## Security & Privacy
+
+**🔒 Local-Only Storage:**
+- All memories stored locally: `~/.chaos/db`
+- No cloud sync, no external transmission
+- Your data never leaves your machine
+- Database is version-controlled (Dolt) for full auditability
+
+**⚙️ Auto-Capture (Opt-In Only):**
+- **Disabled by default** - requires explicit configuration
+- You control which session files to process
+- Manual configuration required in `~/.chaos/config.yaml`
+- Only processes paths you explicitly specify in `auto_capture.sources`
+- All processing runs locally via your own Ollama instance
+- No external API calls or cloud services
+
+**🔍 Permissions:**
+- **Read:** Session transcript files (only paths you configure)
+- **Write:** Local database (`~/.chaos/db`)
+- **Network:** None (100% offline operation)
+
+**✅ Transparency:**
+- Install script included in repo (`install.sh`) - auditable before running
+- Binaries built via GitHub Actions (reproducible builds)
+- Database is plain Dolt SQL - inspect anytime with `dolt sql`
+- Open source: Review all code at https://github.com/hargabyte/Chaos-mind
+
+**🛡️ Control:**
+```bash
+# Preview what auto-capture would process (dry-run)
+chaos-consolidator --auto-capture --once --dry-run
+
+# Disable auto-capture completely
+# Edit ~/.chaos/config.yaml and set:
+auto_capture:
+  enabled: false
+
+# Or simply don't configure any session paths
+```
+
+**📋 What Data is Accessed:**
+- Manual mode: Only what you explicitly store via `chaos-cli store`
+- Auto-capture mode: Only session files in paths you configure
+- Never: Passwords, API keys, or system files (unless you explicitly configure them)
 
 ---
 
