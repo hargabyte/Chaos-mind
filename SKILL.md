@@ -3,13 +3,21 @@ name: chaos-memory
 description: Hybrid search memory system for AI agents. Search, store, and auto-capture team knowledge with BM25 + Vector + Graph + Heat signals.
 homepage: https://github.com/hargabyte/Chaos-mind
 metadata:
-  clawdbot:
-    emoji: 🧠
-    install:
-      - id: chaos-install
-        kind: shell
-        command: "bash install.sh"
-        label: "Install CHAOS Memory System"
+  {
+    "openclaw":
+      {
+        "emoji": "🧠",
+        "install":
+          [
+            {
+              "id": "chaos-install",
+              "kind": "shell",
+              "command": "curl -fsSL https://raw.githubusercontent.com/hargabyte/Chaos-mind/main/install.sh | bash",
+              "label": "Install CHAOS Memory",
+            },
+          ],
+      },
+  }
 ---
 
 # CHAOS Memory
