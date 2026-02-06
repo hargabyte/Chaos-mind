@@ -137,6 +137,85 @@ chaos-consolidator --auto-capture --config ~/.chaos/config.yaml &
 
 ---
 
+## 🔗 Enhanced Capabilities
+
+CHAOS Memory integrates with other tools for deeper intelligence:
+
+### Cortex (cx) - Semantic Code Anchoring
+
+**What it does:** Anchors memories to specific code locations and files
+
+**Why use it:** Memories become context-aware - "this decision affects Auth.tsx lines 45-67"
+
+**How it works:**
+- CHAOS detects if `cx` is available at startup
+- Automatically creates semantic links: `memory → code location`
+- Search results include related code snippets
+
+**Install Cortex:**
+```bash
+# Cortex is a separate tool
+# Install from: https://github.com/hargabyte/cortex
+```
+
+**Example:**
+```bash
+# Without Cortex
+chaos-cli search "auth flow"
+→ "Changed auth to use JWT tokens"
+
+# With Cortex
+chaos-cli search "auth flow"
+→ "Changed auth to use JWT tokens"
+→ 📍 Auth.tsx:45-67, middleware/auth.js:12
+```
+
+### Beads - Task Relationship Tracking
+
+**What it does:** Links memories to tasks and issues
+
+**Why use it:** Track which memories led to which tasks, decisions to implementations
+
+**How it works:**
+- CHAOS detects if `beads` or `beads-rust` is available
+- Creates bidirectional links: `memory ↔ task`
+- Memories can reference issue IDs automatically
+
+**Install Beads:**
+```bash
+# Beads is a separate task management tool
+# Install from: https://github.com/hargabyte/beads
+```
+
+**Example:**
+```bash
+# Store memory with task reference
+chaos-cli store "Need to refactor auth" --category decision --task AUTH-123
+
+# Search shows related tasks
+chaos-cli search "auth refactor"
+→ "Need to refactor auth"
+→ 📋 Task: AUTH-123 (In Progress)
+```
+
+### Combined Power
+
+When **all three tools** work together:
+```bash
+chaos-cli search "performance optimization"
+→ Memory: "Added Redis caching layer"
+→ 📍 Code: cache/redis.js:34-89
+→ 📋 Task: PERF-042 (Completed)
+→ 🔗 Related: 3 other memories, 2 code files, 1 PR
+```
+
+**Status Detection:**
+- Cortex: Detected automatically on startup (logs `[OPT] Cortex Engine: FOUND`)
+- Beads: Detected automatically on startup (logs `[OPT] Beads Task Manager: FOUND`)
+- View status: Check the startup logs when running `chaos-mcp`
+
+---
+
 ## Configuration
 
 Default config location: `~/.chaos/config.yaml`

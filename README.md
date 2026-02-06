@@ -31,6 +31,11 @@
 - ~42s per 16-message session
 - Qwen3-1.7B with thinking disabled
 
+🔗 **Enhanced with Cortex + Beads** (optional):
+- **Cortex** - Anchor memories to code locations (semantic linking)
+- **Beads** - Link memories to tasks/issues (project tracking)
+- Together: Search shows memories → code → tasks in one view
+
 ---
 
 ## Installation
@@ -166,6 +171,98 @@ CHAOS_MODEL=qwen3:1.7b
 export CHAOS_DB_PORT=3308
 chaos-cli search "query"
 ```
+
+---
+
+## 🔗 Integrations (Optional Enhancements)
+
+CHAOS Memory becomes dramatically more powerful when paired with complementary tools:
+
+### Cortex (cx) - Semantic Code Anchoring
+
+**What:** Links memories to specific code locations and files  
+**Why:** Provides concrete code context for abstract decisions  
+**Install:** https://github.com/hargabyte/cortex
+
+**Example:**
+```bash
+# Search returns memory + code location
+chaos-cli search "auth implementation"
+→ "Changed to JWT-based auth"
+→ 📍 src/auth/middleware.ts:45-89
+→ 📍 config/security.yml:12
+```
+
+**How it works:**
+- CHAOS auto-detects `cx` binary on startup
+- Creates semantic links when storing memories near code changes
+- Search results include relevant code snippets automatically
+
+**Status:** Check logs for `[OPT] Cortex Engine: FOUND`
+
+### Beads - Task & Issue Tracking
+
+**What:** Connects memories to tasks, PRs, and project milestones  
+**Why:** Track decision → implementation pipeline  
+**Install:** https://github.com/hargabyte/beads
+
+**Example:**
+```bash
+# Store with task reference
+chaos-cli store "Refactor auth module" --task AUTH-42
+
+# Search shows task status
+chaos-cli search "auth refactor"
+→ "Refactor auth module"
+→ 📋 AUTH-42: In Progress
+→ 🔗 PR #156, commit abc123
+```
+
+**How it works:**
+- CHAOS auto-detects `beads` or `beads-rust` binary
+- Links memories to Beads issues bidirectionally
+- Search can filter by task status, assignee, or milestone
+
+**Status:** Check logs for `[OPT] Beads Task Manager: FOUND`
+
+### Combined Power: The Trinity
+
+When **CHAOS + Cortex + Beads** work together, you get:
+
+```bash
+chaos-cli search "caching"
+→ Memory: "Added Redis for session storage"
+→ 📍 Code: cache/redis.ts:34-156, config/redis.yml
+→ 📋 Task: PERF-089 (Completed 2024-02-01)
+→ 🔗 Related: 4 memories, 7 files, 2 PRs
+→ 🔥 Heat: 0.87 (accessed 12 times)
+```
+
+**Benefits:**
+- **Context-complete:** Never wonder "where is this code?" or "which task?"
+- **Faster onboarding:** New team members see decisions → implementations → code
+- **Better search:** Multi-signal ranking (text + code + tasks + heat)
+- **Historical insight:** Track how decisions evolved into working code
+
+**Installation:**
+```bash
+# 1. Install CHAOS (this skill)
+clawdhub install chaos-memory
+
+# 2. Install Cortex (optional)
+clawdhub install cortex
+
+# 3. Install Beads (optional)
+clawdhub install beads-rust
+
+# All three auto-discover each other!
+```
+
+**Recommended for:**
+- Teams with multiple projects
+- Long-running codebases (6+ months)
+- Frequent context-switching
+- Remote/distributed teams
 
 ---
 
