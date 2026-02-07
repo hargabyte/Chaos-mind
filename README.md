@@ -1,4 +1,4 @@
-# CHAOS Memory - ClawdHub Skill
+# CHAOS Memory - ClawHub Skill
 
 **C**ontext-aware **H**ierarchical **A**utonomous **O**bservation **S**ystem
 
